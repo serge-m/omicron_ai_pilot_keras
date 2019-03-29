@@ -16,8 +16,15 @@ class ROSPackage_AI_Driver:
 		self.ai_driver_publisher = rospy.Publisher('ackermann_cmd_mux/input/ai_driver', AckermannDriveStamped, queue_size=10)
 
 	def start(self):
-		self.ai_driver_publisher.publish(self.value_to_publish)
+		rate = rospy.Rate(10)
+		while not rospy.is_shutdown():
+			self.ai_driver_publisher.publish(self.value_to_publish)
+			rate.sleep()
+
 
 if __name__ == '__main__':
 	package = ROSPackage_AI_Driver()
-	package.start()
+	try:
+		package.start()
+	except rospy.ROSInterruptException:
+		pass
