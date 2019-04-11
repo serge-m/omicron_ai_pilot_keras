@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
+# TODO:
+# test
+# refactor
+# path handling
+# add CLI(docopt)
+
 import os
-import sys
-import json
 import csv
 import glob
-import time
 import random
-import tarfile
 import numpy as np
 from PIL import Image
 from docopt import docopt
@@ -180,17 +182,22 @@ class DataSetGenerator(object):
             table = csv.reader(csvfile)
             for row in table:
                 picture_file_name = row[0]
-                # TODO: unpack picture
-                in_values = []
+                # TODO: verify / expand path relative to csv
+                pic = Image.open("foo.jpg")
+                in_values = np.array(pic)
 
-                out_values = [float(i) for i in row[1:2]]
+                out_values = np.array([float(i) for i in row[1:2]])
                 self.data_set.append((in_values, out_values))
 
-    def populate_train_eval(self, train_frac=0.6):
-        self.train = random.sample(self.data_set, train_frac * len(self.data_set))
+    def populate_train_eval(self, train_frac=0.6, record_transform=None):
+        self.train = random.sample(self.data_set, int(train_frac * len(self.data_set)))
         for i in self.data_set:
             if i not in self.train:
                 self.eval.append(i)
+                
+        if record_transform:
+            self.train = record_transform(self.train)
+            self.eval = record_transform(self.eval)
 
     def get_train_generator(self):
         for i in self.train:
@@ -207,8 +214,6 @@ def train(cfg, tub_names, model_name, base_model_path=None):
     use the specified data in tub_names to train an artifical neural network
     saves the output trained model as model_name
     """
-    X_keys = ['cam/image_array']
-    y_keys = ['user/angle', 'user/throttle']
 
     def rt(record):
         record['user/angle'] = linear_bin(record['user/angle'])
@@ -224,21 +229,15 @@ def train(cfg, tub_names, model_name, base_model_path=None):
     if not tub_names:
         tub_names = os.path.join(cfg.DATA_PATH, '*')
 
-    # FIXME:
-    
-    data_set = DataSetGenerator()
-    #gen = data_set.get_generator()
-    train_gen, val_gen = data_set.get_train_val_gen()
+    # XXX: what happens if total_train is not multiple of BATCH_SIZE? 
+    data_set = DataSetGenerator(tub_names)
+    data_set.read()
+    data_set.populate_train_eval(record_transform=rt,
+                                 train_frac=TRAIN_TEST_SPLIT)
+    train_gen = data_set.get_train_gen()
+    val_gen = data_set.get_eval_gen()
 
-
-
-    tubgroup = TubGroup(tub_names)
-    train_gen, val_gen = tubgroup.get_train_val_gen(X_keys, y_keys,
-                                                    record_transform=rt,
-                                                    batch_size=BATCH_SIZE,
-                                                    train_frac=TRAIN_TEST_SPLIT)
-
-    total_records = len(tubgroup.df)
+    total_records = len(data_set.data_set)
     total_train = int(total_records * TRAIN_TEST_SPLIT)
     total_val = total_records - total_train
     steps_per_epoch = total_train // BATCH_SIZE
