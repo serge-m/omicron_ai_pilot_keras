@@ -4,6 +4,8 @@
 # refactor
 # path handling
 # add CLI(docopt)
+# fix keras / tensorflow fit_generator call
+# https://picsum.photos/  - for picture
 
 import os
 import csv
@@ -115,7 +117,7 @@ class KerasPilot:
             verbose=1,
             validation_data=val_gen,
             callbacks=callbacks_list,
-            validation_steps=steps * (1.0 - train_split) / train_split)
+            validation_steps=steps * (1.0 - train_split))
         return hist
 
     def run(self, img_arr):
@@ -181,20 +183,24 @@ class DataSetGenerator(object):
         with open(self.path, 'r') as csvfile:
             table = csv.reader(csvfile)
             for row in table:
-                picture_file_name = row[0]
+                if os.path.isabs(row[0]):
+                    picture_file_name = row[0]
+                else:
+                    self_dir = os.path.dirname(os.path.realpath(self.path))
+                    picture_file_name = os.path.join(self_dir, row[0])
                 # TODO: verify / expand path relative to csv
-                pic = Image.open("foo.jpg")
+                pic = Image.open(picture_file_name)
                 in_values = np.array(pic)
 
                 out_values = np.array([float(i) for i in row[1:2]])
                 self.data_set.append((in_values, out_values))
 
     def populate_train_eval(self, train_frac=0.6, record_transform=None):
-        self.train = random.sample(self.data_set, int(train_frac * len(self.data_set)))
-        for i in self.data_set:
-            if i not in self.train:
-                self.eval.append(i)
-                
+        cut = int(train_frac * len(self.data_set))
+        random.shuffle(self.data_set)
+        self.train = self.data_set[:cut] # first % of shuffled list
+        self.eval = self.data_set[cut:]  # last % of shuffled list
+
         if record_transform:
             self.train = record_transform(self.train)
             self.eval = record_transform(self.eval)
@@ -209,14 +215,15 @@ class DataSetGenerator(object):
         pass
 
 
-def train(cfg, tub_names, model_name, base_model_path=None):
+def train(tub_names, model_name, base_model_path=None):
     """
     use the specified data in tub_names to train an artifical neural network
     saves the output trained model as model_name
     """
 
     def rt(record):
-        record['user/angle'] = linear_bin(record['user/angle'])
+        record[1] = linear_bin(record[1])
+        record[2] = linear_bin(record[2])
         return record
 
     model_path = os.path.expanduser(model_name)
@@ -232,15 +239,15 @@ def train(cfg, tub_names, model_name, base_model_path=None):
     # XXX: what happens if total_train is not multiple of BATCH_SIZE? 
     data_set = DataSetGenerator(tub_names)
     data_set.read()
-    data_set.populate_train_eval(record_transform=rt,
+    data_set.populate_train_eval(record_transform=None,
                                  train_frac=TRAIN_TEST_SPLIT)
-    train_gen = data_set.get_train_gen()
-    val_gen = data_set.get_eval_gen()
+    train_gen = data_set.get_train_generator()
+    val_gen = data_set.get_eval_generator()
 
     total_records = len(data_set.data_set)
     total_train = int(total_records * TRAIN_TEST_SPLIT)
     total_val = total_records - total_train
-    steps_per_epoch = total_train // BATCH_SIZE
+    steps_per_epoch = total_train #// BATCH_SIZE
 
     print('tub_names', tub_names)
     print('train: %d, validation: %d' % (total_train, total_val))
@@ -250,4 +257,13 @@ def train(cfg, tub_names, model_name, base_model_path=None):
              val_gen,
              saved_model_path=model_path,
              steps=steps_per_epoch,
-             train_split=cfg.TRAIN_TEST_SPLIT)
+             train_split=TRAIN_TEST_SPLIT)
+
+
+def main():
+    train('../data_set/data_set.csv', model_name='test.model')
+    pass
+
+
+if __name__ == "__main__":
+    main()
