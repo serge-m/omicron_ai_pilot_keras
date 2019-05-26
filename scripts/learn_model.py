@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 # TODO:
 # test
@@ -147,7 +148,7 @@ def expand_path_arg(path_str):
         paths = expand_path_mask(path)
         expanded_paths += paths
     return expanded_paths
-    
+
 def linear_bin(a):
     """
     Convert a value to a categorical array.
@@ -236,7 +237,7 @@ def train(tub_names, model_name, base_model_path=None):
     if not tub_names:
         tub_names = os.path.join(cfg.DATA_PATH, '*')
 
-    # XXX: what happens if total_train is not multiple of BATCH_SIZE? 
+    # XXX: what happens if total_train is not multiple of BATCH_SIZE?
     data_set = DataSetGenerator(tub_names)
     data_set.read()
     data_set.populate_train_eval(record_transform=None,
