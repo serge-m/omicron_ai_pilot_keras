@@ -21,6 +21,7 @@ def extract_data(rosbag_path, dir_path):
 	bag = rosbag.Bag(rosbag_path, 'r')
 	with open(os.path.join(dir_path, 'data_js.csv'), 'w') as writeFile:
 		writer = csv.writer(writeFile)
+		writer.writerow(["timestamp", "msg.header.seq", "msg.header.stamp.secs", "msg.header.stamp.nsecs", "msg.drive.steering_angle", "msg.drive.speed"])
 		for topic, msg, t in bag.read_messages(topics=[js_topic]):
 			writer.writerow([t.to_nsec(), msg.header.seq, msg.header.stamp.secs, msg.header.stamp.nsecs, msg.drive.steering_angle, msg.drive.speed])
 
@@ -28,6 +29,7 @@ def extract_data(rosbag_path, dir_path):
 	counter = 0
 	with open(os.path.join(dir_path, 'data_image.csv'), 'w') as writeFile:
 		writer = csv.writer(writeFile)
+		writer.writerow(["timestamp", "msg.header.seq", "msg.header.stamp.secs", "msg.header.stamp.nsecs", "image"])
 		for topic, msg, t in bag.read_messages(topics=[image_topic]):
 			writer.writerow([t.to_nsec(), msg.header.seq, msg.header.stamp.secs, msg.header.stamp.nsecs, "frame_" + str(counter) + ".png"])
 			cv_image = bridge.compressed_imgmsg_to_cv2(msg)
