@@ -3,21 +3,27 @@
 from keras_preprocessing.image import ImageDataGenerator
 from keras.layers import Input
 from keras.models import Model, Sequential, load_model
-from keras.layers import Convolution2D, MaxPooling2D
+from keras.layers import Convolution2D, MaxPooling2D, Cropping2D
 from keras.layers import Dropout, Flatten, Dense, Activation
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras import optimizers
 
 import pandas as pd
 
+IMAGE_INPUT_WIDTH=32
+IMAGE_INPUT_HEIGHT=32
+# This discards number of pixels from the top after scaling
+TOP_MARGIN_IN_PIXELS=8
+
 df = pd.read_csv('../data_set/data.csv', header=None, names=['x_col', 'y_col', 'z_col'])[['x_col', 'y_col']]
 df['y_col'] = ((df['y_col'] * 2).astype('int').astype('float')/2).astype('str')
 print(df)
 
 datagen=ImageDataGenerator()
-train_generator=datagen.flow_from_dataframe(dataframe=df, directory="../data_set", x_col="x_col", y_col="y_col", class_mode="categorical", target_size=(32,32), batch_size=32)
+train_generator=datagen.flow_from_dataframe(dataframe=df, directory="../data_set", x_col="x_col", y_col="y_col", class_mode="categorical", target_size=(IMAGE_INPUT_WIDTH,IMAGE_INPUT_HEIGHT), batch_size=32)
 model = Sequential()
 
+model.add(Cropping2D(cropping=((TOP_MARGIN_IN_PIXELS,0),(0,0)), input_shape=(IMAGE_INPUT_WIDTH, IMAGE_INPUT_HEIGHT,3)))
 model.add(Convolution2D(24, (5, 5), strides=(2,2), activation='relu', padding='same', input_shape=(32,32,3)))
 model.add(Convolution2D(32, (5, 5), strides=(2,2), activation='relu', padding='same'))
 model.add(Convolution2D(64, (5, 5), strides=(2,2), activation='relu', padding='same'))
