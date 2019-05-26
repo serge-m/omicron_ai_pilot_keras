@@ -17,18 +17,6 @@ print(df)
 datagen=ImageDataGenerator()
 train_generator=datagen.flow_from_dataframe(dataframe=df, directory="../data_set", x_col="x_col", y_col="y_col", class_mode="categorical", target_size=(32,32), batch_size=32)
 model = Sequential()
-    # Convolution2D class name is an alias for Conv2D
-#model = Convolution2D(filters=24, kernel_size=(5, 5), strides=(2, 2), activation='relu', data_format='channels_last')(model)
-#model = Convolution2D(filters=32, kernel_size=(5, 5), strides=(2, 2), activation='relu', data_format='channels_last')(model)
-#model = Convolution2D(filters=64, kernel_size=(5, 5), strides=(2, 2), activation='relu', data_format='channels_last')(model)
-#model = Convolution2D(filters=64, kernel_size=(3, 3), strides=(2, 2), activation='relu', data_format='channels_last')(model)
-#model = Convolution2D(filters=64, kernel_size=(3, 3), strides=(1, 1), activation='relu', data_format='channels_last')(model)
-
-#model = Flatten(name='flattened')(model)
-#model = Dense(units=100, activation='linear')(model)
-#model = Dropout(rate=.1)(model)
-#model = Dense(units=50, activation='linear')(model)
-#model = Dropout(rate=.1)(model)
 
 model.add(Convolution2D(24, (5, 5), strides=(2,2), activation='relu', padding='same', input_shape=(32,32,3)))
 model.add(Convolution2D(32, (5, 5), strides=(2,2), activation='relu', padding='same'))
@@ -43,4 +31,8 @@ model.add(Dropout(rate=.1))
 model.add(Dense(5, activation='linear'))
 
 model.compile(optimizers.rmsprop(lr=0.0001), loss="categorical_crossentropy", metrics=["accuracy"])
-model.fit_generator(generator=train_generator, steps_per_epoch=10, epochs=10)
+# Set callback functions to early stop training and save the best model so far
+callbacks = [EarlyStopping(monitor='acc', patience=2),
+             ModelCheckpoint(filepath='best_model.h5', monitor='acc', save_best_only=True)]
+
+model.fit_generator(callbacks=callbacks, generator=train_generator, steps_per_epoch=10, epochs=10)
