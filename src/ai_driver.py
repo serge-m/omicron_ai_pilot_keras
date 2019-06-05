@@ -11,12 +11,14 @@ from keras_preprocessing.image.utils import load_img, img_to_array
 
 from PIL import Image as pil_image
 from io import BytesIO
+import numpy as np
 
 class ROSPackage_AI_Driver:
     def __init__(self):
-        rospy.loginfo("AI driver init")
-        print("DUPA")
         rospy.init_node('ai_driver')
+        rospy.loginfo("AI driver init. Loading neural network...")
+        self.model = load_model('/tmp/best_model.h5')
+        rospy.loginfo("Neural network loaded, starting service.")
 
         self.value_to_publish = AckermannDriveStamped()
         self.value_to_publish.drive.speed = 1.0
@@ -41,7 +43,10 @@ class ROSPackage_AI_Driver:
         rospy.loginfo("img" + str(len(img.data)))
         image = self.image_to_array(img.data)
         image=np.expand_dims(image,0)
-        prediction = model.predict(image)
+        prediction = self.model.predict(image)
+        rospy.loginfo(prediction[0])
+        value = (np.argmax(prediction[0]) - 2) / 2
+        rospy.loginfo(str(value))
         self.ai_driver_publisher.publish(self.value_to_publish)
 
 import sys
