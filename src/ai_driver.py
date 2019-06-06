@@ -39,14 +39,14 @@ class ROSPackage_AI_Driver:
         return img_to_array(load_img(BytesIO(img), target_size=(32,32)))
 
     def receive_compressed_image(self, img):
-        rospy.loginfo("img" + type(img).__name__)
-        rospy.loginfo("img" + str(len(img.data)))
+        #rospy.loginfo("img" + type(img).__name__)
+        #rospy.loginfo("img" + str(len(img.data)))
         image = self.image_to_array(img.data)
         image=np.expand_dims(image,0)
         prediction = self.model.predict(image)
-        rospy.loginfo(prediction[0])
+        #rospy.loginfo(prediction[0])
         value = (np.argmax(prediction[0]) - 2) / 2
-        rospy.loginfo(str(value))
+        #rospy.loginfo(str(value))
         self.value_to_publish.drive.steering_angle = value
         self.ai_driver_publisher.publish(self.value_to_publish)
 
