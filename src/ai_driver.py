@@ -47,6 +47,7 @@ class ROSPackage_AI_Driver:
         rospy.loginfo(prediction[0])
         value = (np.argmax(prediction[0]) - 2) / 2
         rospy.loginfo(str(value))
+	self.value_to_publish.drive.steering_angle = value
         self.ai_driver_publisher.publish(self.value_to_publish)
 
 import sys
