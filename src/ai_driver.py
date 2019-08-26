@@ -6,7 +6,8 @@ import rospy
 from ackermann_msgs.msg import AckermannDriveStamped
 from sensor_msgs.msg import CompressedImage
 
-from keras.models import load_model
+import tensorflow as tf
+from tensorflow.python.keras.models import load_model
 from keras_preprocessing.image.utils import load_img, img_to_array
 
 from PIL import Image as pil_image
@@ -17,7 +18,7 @@ class ROSPackage_AI_Driver:
     def __init__(self):
         rospy.init_node('ai_driver')
         rospy.loginfo("AI driver init. Loading neural network...")
-        self.model = load_model('/tmp/best_model.h5')
+        self.model = load_model('/home/s/work/car/sergem_20190626_bird_transform_w_normthrottle')
         rospy.loginfo("Neural network loaded, starting service.")
 
         self.value_to_publish = AckermannDriveStamped()
@@ -36,14 +37,15 @@ class ROSPackage_AI_Driver:
             #rate.sleep()
 
     def image_to_array(self, img):
-        return img_to_array(load_img(BytesIO(img), target_size=(32,32)))
+        return img_to_array(load_img(BytesIO(img), target_size=(120,160)))
 
     def receive_compressed_image(self, img):
         #rospy.loginfo("img" + type(img).__name__)
         #rospy.loginfo("img" + str(len(img.data)))
         image = self.image_to_array(img.data)
         image=np.expand_dims(image,0)
-        prediction = self.model.predict(image)
+        with graph.as_default():
+            prediction = self.model.predict(image)
         #rospy.loginfo(prediction[0])
         value = (np.argmax(prediction[0]) - 2) / 2
         #rospy.loginfo(str(value))
@@ -51,6 +53,10 @@ class ROSPackage_AI_Driver:
         self.ai_driver_publisher.publish(self.value_to_publish)
 
 import sys
+
+global graph
+graph = tf.get_default_graph()
+
 if __name__ == '__main__':
     package = ROSPackage_AI_Driver()
     try:
