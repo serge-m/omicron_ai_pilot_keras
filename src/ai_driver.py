@@ -66,7 +66,7 @@ class FixedAIDriver:
         prediction = self.model.predict(image)
 
         rospy.loginfo(prediction[0])
-        self.ai_driver_publisher.publish(create_message(speed=0.5 + img.data[12120] * 0.001, angle=prediction[0]))
+        self.ai_driver_publisher.publish(create_message(speed=0.8, angle=prediction[0]))
 
 
 if __name__ == '__main__':
