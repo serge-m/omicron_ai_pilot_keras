@@ -16,6 +16,8 @@ import os
 
 import tensorflow.keras as K
 
+from PIL import Image, ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 class TFModel:
     def __init__(self, path):
