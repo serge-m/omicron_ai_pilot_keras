@@ -10,7 +10,7 @@ from cv_bridge import CvBridge
 
 import rosbag
 
-js_topic = "/low_level/ackermann_cmd_mux/input/teleop"
+js_topic = "/pwm_radio_arduino/radio_pwm"
 image_topic = "/raspicam_node/image/compressed"
 
 
@@ -26,12 +26,11 @@ def extract_data(rosbag_path, dir_path):
     bag = rosbag.Bag(rosbag_path, 'r')
     with open(os.path.join(dir_path, 'data_js.csv'), 'w') as writeFile:
         writer = csv.writer(writeFile)
-        writer.writerow(["timestamp", "msg.header.seq", "msg.header.stamp.secs", "msg.header.stamp.nsecs",
-                         "msg.drive.steering_angle", "msg.drive.speed"])
+        writer.writerow(["timestamp",
+                         "msg.steering", "msg.throttle"])
         for topic, msg, t in bag.read_messages(topics=[js_topic]):
             writer.writerow(
-                [t.to_nsec(), msg.header.seq, msg.header.stamp.secs, msg.header.stamp.nsecs, msg.drive.steering_angle,
-                 msg.drive.speed])
+                [t.to_nsec(), msg.steering, msg.throttle])
 
     bridge = CvBridge()
     counter = 0
@@ -39,10 +38,11 @@ def extract_data(rosbag_path, dir_path):
         writer = csv.writer(writeFile)
         writer.writerow(["timestamp", "msg.header.seq", "msg.header.stamp.secs", "msg.header.stamp.nsecs", "image"])
         for topic, msg, t in bag.read_messages(topics=[image_topic]):
+            img_fname = "frame_{:010d}.jpg".format(counter)
             writer.writerow([t.to_nsec(), msg.header.seq, msg.header.stamp.secs, msg.header.stamp.nsecs,
-                             "frame_" + str(counter) + ".png"])
+                             img_fname])
             cv_image = bridge.compressed_imgmsg_to_cv2(msg)
-            cv2.imwrite(os.path.join(dir_path, "frame_" + str(counter) + ".png"), cv_image)
+            cv2.imwrite(os.path.join(dir_path, img_fname), cv_image)
             counter += 1
 
     bag.close()
@@ -74,7 +74,7 @@ def match_data(directory):
                 if image_row["timestamp"] < data["timestamp"]:
                     break
 
-            writer.writerow([image_row["image"], data["msg.drive.steering_angle"], data["msg.drive.speed"]])
+            writer.writerow([image_row["image"], data["msg.steering"], data["msg.throttle"]])
 
 
 if __name__ == "__main__":
