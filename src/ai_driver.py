@@ -62,13 +62,14 @@ class FixedAIDriver:
         return img_to_array(load_img(BytesIO(img), target_size=(120, 160)))
 
     def receive_compressed_image(self, img):
-        rospy.loginfo("PID %d, thread %d ", os.getpid(), threading.get_ident())
-        rospy.loginfo("img %s size %d", type(img).__name__, len(img.data))
+        rospy.logdebug("PID %d, thread %d, img size %d", os.getpid(), threading.get_ident(), len(img.data))
         image = self.image_to_array(img.data)[np.newaxis]
-        prediction = self.model.predict(image)
+        pred_angle, pred_throttle = self.model.predict(image / 255.)
+        angle = pred_angle.flat[0]
+        speed = pred_throttle.flat[0]
 
-        rospy.loginfo(prediction[0])
-        self.ai_driver_publisher.publish(create_message(speed=0.8, angle=prediction[0]))
+        rospy.loginfo("prediction %2.4f %2.4f", speed, angle)
+        self.ai_driver_publisher.publish(create_message(speed=speed, angle=angle))
 
 
 if __name__ == '__main__':
