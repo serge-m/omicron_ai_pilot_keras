@@ -61,6 +61,13 @@ def match_data(data_dir, dst_csv_path):
 
     with open(dst_csv_path, 'w') as writeFile:
         writer = csv.writer(writeFile)
+        writer.writerow((
+                "image_timestamp",
+                "steering_timestamp",
+                "image",
+                "msg.steering",
+                "msg.throttle"
+            ))
         iter = steering_data.iterrows()
         data = None
 
@@ -77,6 +84,8 @@ def match_data(data_dir, dst_csv_path):
                     break
 
             writer.writerow((
+                image_row["timestamp"],
+                data["timestamp"],
                 os.path.join(relative_dir_of_images, image_row["image"]),
                 data["msg.steering"],
                 data["msg.throttle"]
