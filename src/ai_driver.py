@@ -19,6 +19,7 @@ import tensorflow.keras as K
 from PIL import Image, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+
 class TFModel:
     def __init__(self, path):
         self.path = path
@@ -48,8 +49,9 @@ class FixedAIDriver:
     def __init__(self, path):
         rospy.init_node('ai_driver')
         self.model = TFModel(path)
-        rospy.Subscriber('raspicam_node/image/compressed', CompressedImage, self.receive_compressed_image)
-        self.ai_driver_publisher = rospy.Publisher('ackermann_cmd_mux/input/ai_driver', AckermannDriveStamped,
+        rospy.Subscriber('raspicam_node/image/compressed',
+                         CompressedImage, self.receive_compressed_image)
+        self.ai_driver_publisher = rospy.Publisher('ackermann_cmd', AckermannDriveStamped,
                                                    queue_size=10)
 
     def start(self):
@@ -62,14 +64,16 @@ class FixedAIDriver:
         return img_to_array(load_img(BytesIO(img), target_size=(120, 160)))
 
     def receive_compressed_image(self, img):
-        rospy.logdebug("PID %d, thread %d, img size %d", os.getpid(), threading.get_ident(), len(img.data))
+        rospy.logdebug("PID %d, thread %d, img size %d",
+                       os.getpid(), threading.get_ident(), len(img.data))
         image = self.image_to_array(img.data)[np.newaxis]
         pred_angle, pred_throttle = self.model.predict(image / 255.)
         angle = pred_angle.flat[0]
         speed = pred_throttle.flat[0]
 
         rospy.loginfo("prediction %2.4f %2.4f", speed, angle)
-        self.ai_driver_publisher.publish(create_message(speed=speed, angle=angle))
+        self.ai_driver_publisher.publish(
+            create_message(speed=speed, angle=angle))
 
 
 if __name__ == '__main__':
