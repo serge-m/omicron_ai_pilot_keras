@@ -61,7 +61,8 @@ class FixedAIDriver:
         rospy.loginfo("AI driver finished")
 
     def image_to_array(self, img):
-        return img_to_array(load_img(BytesIO(img), target_size=(120, 160)))
+        pil_img = Image.open(BytesIO(img)).convert('RGB').resize((160,120), Image.BILINEAR)
+        return img_to_array(pil_img)
 
     def receive_compressed_image(self, img):
         rospy.logdebug("PID %d, thread %d, img size %d",
